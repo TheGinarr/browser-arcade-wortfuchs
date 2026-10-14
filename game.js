@@ -27,20 +27,25 @@
    ============================================================ */
 
 import { lade, speichere, spielZuruecksetzen } from "./assets/storage.js";
-import { bewegungReduziert, toplisteAnzeigen, gameOverDialog, zahlHochzaehlen } from "./assets/ui.js";
+import {
+  bewegungReduziert,
+  toplisteAnzeigen,
+  gameOverDialog,
+  zahlHochzaehlen,
+} from "./assets/ui.js";
 import { LOESUNGEN, ZUSATZ, HAEUFIGE } from "./woerter.js";
 
 /* ------------------------------------------------------------
    Konstanten
    ------------------------------------------------------------ */
-const SPIEL = "wortfuchs";           // Speicher-Schlüssel (siehe storage.js)
-const LAENGE = 5;                    // Buchstaben pro Wort
-const VERSUCHE = 6;                  // Zeilen im Raster
+const SPIEL = "wortfuchs"; // Speicher-Schlüssel (siehe storage.js)
+const LAENGE = 5; // Buchstaben pro Wort
+const VERSUCHE = 6; // Zeilen im Raster
 
 // Flip-Animation: JS und CSS teilen sich diese Werte (init() schreibt sie
 // als CSS-Variablen), damit sie nie auseinanderlaufen.
-const FLIP_DAUER_MS = 500;           // eine Kachel braucht 0,5 s zum Umklappen
-const FLIP_VERSATZ_MS = 100;         // jede weitere Kachel startet 0,1 s später
+const FLIP_DAUER_MS = 500; // eine Kachel braucht 0,5 s zum Umklappen
+const FLIP_VERSATZ_MS = 100; // jede weitere Kachel startet 0,1 s später
 
 /** Die drei möglichen Auswertungen eines Buchstabens. */
 export const RICHTIG = "richtig";
@@ -118,12 +123,12 @@ const GUELTIGE_WOERTER = new Set([...LOESUNGEN, ...ZUSATZ, ...HAEUFIGE]);
 export function bewerteTipp(loesung, tipp) {
   // Schritt 1: Ausgangslage – alles "nicht enthalten"
   const ergebnis = new Array(LAENGE).fill(NICHT_ENTHALTEN);
-  const vorrat = {};                         // z. B. { O: 1, T: 2 }
+  const vorrat = {}; // z. B. { O: 1, T: 2 }
 
   // Schritt 2 / Durchgang 1: Volltreffer und Vorrat füllen
   for (let i = 0; i < LAENGE; i++) {
     if (tipp[i] === loesung[i]) {
-      ergebnis[i] = RICHTIG;                 // gleicher Buchstabe, gleiche Stelle
+      ergebnis[i] = RICHTIG; // gleicher Buchstabe, gleiche Stelle
     } else {
       // Nicht verbraucht → steht für gelbe Treffer zur Verfügung
       vorrat[loesung[i]] = (vorrat[loesung[i]] || 0) + 1;
@@ -132,10 +137,11 @@ export function bewerteTipp(loesung, tipp) {
 
   // Schritt 3 / Durchgang 2: gelbe Treffer aus dem Vorrat bedienen
   for (let i = 0; i < LAENGE; i++) {
-    if (ergebnis[i] === RICHTIG) continue;   // schon vergeben
-    if (vorrat[tipp[i]] > 0) {               // undefined > 0 ist false → sicher
+    if (ergebnis[i] === RICHTIG) continue; // schon vergeben
+    if (vorrat[tipp[i]] > 0) {
+      // undefined > 0 ist false → sicher
       ergebnis[i] = FALSCHE_STELLE;
-      vorrat[tipp[i]]--;                     // einen Buchstaben "verbrauchen"
+      vorrat[tipp[i]]--; // einen Buchstaben "verbrauchen"
     }
   }
   return ergebnis;
@@ -172,7 +178,7 @@ export function statistikNachRunde(stat, gewonnen) {
     neu.serie = stat.serie + 1;
     neu.besteSerie = Math.max(stat.besteSerie, neu.serie);
   } else {
-    neu.serie = 0;                           // Niederlage: Serie reißt
+    neu.serie = 0; // Niederlage: Serie reißt
   }
   return neu;
 }
@@ -198,12 +204,12 @@ export function statistikSauber(roh) {
    TEIL 2 · Zustand und DOM
    ============================================================ */
 
-let z = null;                 // Zustand der laufenden Runde (wird pro Runde neu angelegt)
+let z = null; // Zustand der laufenden Runde (wird pro Runde neu angelegt)
 let statistik = statistikSauber(null);
-let nurWoerterbuch = true;    // Schalter "Nur Wörterbuch-Wörter zulassen"
-let letztesWort = null;       // damit nicht zweimal hintereinander dasselbe kommt
+let nurWoerterbuch = true; // Schalter "Nur Wörterbuch-Wörter zulassen"
+let letztesWort = null; // damit nicht zweimal hintereinander dasselbe kommt
 let toastTimer = null;
-const el = {};                // DOM-Elemente (init() füllt das)
+const el = {}; // DOM-Elemente (init() füllt das)
 
 /** Startet eine neue Runde. */
 function neueRunde() {
@@ -213,15 +219,15 @@ function neueRunde() {
   letztesWort = loesung;
   z = {
     loesung,
-    versuche: [],               // abgeschickte Tipps: [{ tipp, status }]
-    zeile: 0,                   // Index der aktuellen Zeile (0–5)
-    aktuell: "",                // gerade getippter Text
-    phase: "laeuft",            // "laeuft" | "auswertung" | "gewonnen" | "verloren"
-    tastenStatus: {},           // { A: "richtig", B: "nichtEnthalten", … }
+    versuche: [], // abgeschickte Tipps: [{ tipp, status }]
+    zeile: 0, // Index der aktuellen Zeile (0–5)
+    aktuell: "", // gerade getippter Text
+    phase: "laeuft", // "laeuft" | "auswertung" | "gewonnen" | "verloren"
+    tastenStatus: {}, // { A: "richtig", B: "nichtEnthalten", … }
     aufgabeBestaetigung: false, // siehe neueRundeAngefordert()
-    endeAusstehend: false,      // true, solange der Niederlage-Dialog noch aussteht (Serie gerissen, Eintrag offen)
+    endeAusstehend: false, // true, solange der Niederlage-Dialog noch aussteht (Serie gerissen, Eintrag offen)
   };
-  el.loesungHinweis.hidden = true;   // Lösungswort der vorigen Runde ausblenden
+  el.loesungHinweis.hidden = true; // Lösungswort der vorigen Runde ausblenden
   rasterBauen();
   tastaturZeichnen();
   statusSagen("Neue Runde. Fünf Buchstaben gesucht.");
@@ -241,7 +247,7 @@ function rasterBauen() {
       const kachel = document.createElement("div");
       kachel.className = "kachel";
       kachel.setAttribute("role", "gridcell");
-      kachel.style.setProperty("--i", String(s));   // Position in der Zeile → Flip-Verzögerung
+      kachel.style.setProperty("--i", String(s)); // Position in der Zeile → Flip-Verzögerung
       reihe.push(kachel);
       zeile.append(kachel);
       kachelBeschriften(r, s, kachel);
@@ -256,7 +262,10 @@ function rasterBauen() {
 function kachelBeschriften(zeile, spalte, kachel, buchstabe = "", status = "") {
   const inhalt = buchstabe || "leer";
   const zusatz = status ? `, ${STATUS_TEXT[status]}` : "";
-  kachel.setAttribute("aria-label", `Zeile ${zeile + 1}, Buchstabe ${spalte + 1}: ${inhalt}${zusatz}`);
+  kachel.setAttribute(
+    "aria-label",
+    `Zeile ${zeile + 1}, Buchstabe ${spalte + 1}: ${inhalt}${zusatz}`,
+  );
 }
 
 /** Baut die Bildschirmtastatur. Ein Listener am Container für alle Tasten (Event Delegation). */
@@ -292,7 +301,7 @@ function tastaturBauen() {
     const knopf = e.target.closest("button[data-taste]");
     if (!knopf) return;
     const taste = knopf.dataset.taste;
-    knopf.blur();   // Fokus abgeben, sonst würde ein späteres Enter DIESE Taste erneut drücken
+    knopf.blur(); // Fokus abgeben, sonst würde ein späteres Enter DIESE Taste erneut drücken
     if (taste === "ENTER") tippAbschicken();
     else if (taste === "RUECK") loeschen();
     else buchstabeEingeben(taste);
@@ -317,8 +326,8 @@ function buchstabeEingeben(buchstabe) {
   const spalte = z.aktuell.length;
   z.aktuell += buchstabe;
   const kachel = el.kacheln[z.zeile][spalte];
-  kachel.textContent = buchstabe;               // textContent: nie innerHTML
-  kachel.classList.add("gefuellt");             // löst das kleine "Plopp" aus
+  kachel.textContent = buchstabe; // textContent: nie innerHTML
+  kachel.classList.add("gefuellt"); // löst das kleine "Plopp" aus
   kachelBeschriften(z.zeile, spalte, kachel, buchstabe);
 }
 
@@ -355,7 +364,9 @@ function zeileSchuetteln(zeile) {
   element.classList.remove("schuettel");
   void element.offsetWidth;
   element.classList.add("schuettel");
-  element.addEventListener("animationend", () => element.classList.remove("schuettel"), { once: true });
+  element.addEventListener("animationend", () => element.classList.remove("schuettel"), {
+    once: true,
+  });
 }
 
 function ungueltig(hinweis) {
@@ -383,7 +394,7 @@ function tippAbschicken() {
   const status = bewerteTipp(z.loesung, tipp);
   const zeile = z.zeile;
   z.versuche.push({ tipp, status });
-  z.phase = "auswertung";                       // Eingabe sperren, bis der Flip fertig ist
+  z.phase = "auswertung"; // Eingabe sperren, bis der Flip fertig ist
   zeileAuswerten(zeile, tipp, status);
 
   // Erst NACH der Animation geht es weiter (sonst würde man das Ergebnis
@@ -391,7 +402,7 @@ function tippAbschicken() {
   const dauer = bewegungReduziert() ? 0 : FLIP_DAUER_MS + (LAENGE - 1) * FLIP_VERSATZ_MS;
   const meineRunde = z;
   setTimeout(() => {
-    if (z !== meineRunde) return;               // inzwischen neue Runde → nichts mehr tun
+    if (z !== meineRunde) return; // inzwischen neue Runde → nichts mehr tun
     nachAuswertung(tipp, status);
   }, dauer);
 }
@@ -407,7 +418,7 @@ function zeileAuswerten(zeile, tipp, status) {
   status.forEach((s, spalte) => {
     const kachel = el.kacheln[zeile][spalte];
     kachel.dataset.status = s;
-    if (mitFlip) kachel.classList.add("flip");   // Verzögerung kommt aus --i (Spalte)
+    if (mitFlip) kachel.classList.add("flip"); // Verzögerung kommt aus --i (Spalte)
     kachelBeschriften(zeile, spalte, kachel, tipp[spalte], s);
   });
 
@@ -425,7 +436,7 @@ function nachAuswertung(tipp, status) {
   } else if (z.zeile + 1 >= VERSUCHE) {
     niederlageBehandeln();
   } else {
-    z.zeile++;                                  // nächste Zeile freigeben
+    z.zeile++; // nächste Zeile freigeben
     z.aktuell = "";
     z.phase = "laeuft";
   }
@@ -454,20 +465,23 @@ function siegBehandeln() {
 
   const serie = statistik.serie;
   const meineRunde = z;
-  setTimeout(() => {
-    if (z !== meineRunde) return;
-    // Sieg = immer nur der schlanke Dialog, NIE ein Topliste-Eintrag.
-    // Die Serie läuft ja noch: Sie wird erst eingetragen, wenn sie reißt
-    // (siehe niederlageBehandeln). So steht ein Run genau einmal in der Liste.
-    const dialog = schlankerDialog({
-      titel: "GEWONNEN!",
-      gross: `Serie: ${serie}`,
-      text: `Richtig in ${anzahlVersuche} ${anzahlVersuche === 1 ? "Versuch" : "Versuchen"}. Die Serie kommt in die Topliste, sobald sie reißt.`,
-      neustartText: "Nächste Runde",
-      neustart: neueRunde,
-    });
-    beiDialogEnde(dialog, hudZeichnen);   // Topliste ändert sich beim Sieg nicht
-  }, hatBewegung ? 1300 : 500);
+  setTimeout(
+    () => {
+      if (z !== meineRunde) return;
+      // Sieg = immer nur der schlanke Dialog, NIE ein Topliste-Eintrag.
+      // Die Serie läuft ja noch: Sie wird erst eingetragen, wenn sie reißt
+      // (siehe niederlageBehandeln). So steht ein Run genau einmal in der Liste.
+      const dialog = schlankerDialog({
+        titel: "GEWONNEN!",
+        gross: `Serie: ${serie}`,
+        text: `Richtig in ${anzahlVersuche} ${anzahlVersuche === 1 ? "Versuch" : "Versuchen"}. Die Serie kommt in die Topliste, sobald sie reißt.`,
+        neustartText: "Nächste Runde",
+        neustart: neueRunde,
+      });
+      beiDialogEnde(dialog, hudZeichnen); // Topliste ändert sich beim Sieg nicht
+    },
+    hatBewegung ? 1300 : 500,
+  );
 }
 
 /**
@@ -488,9 +502,9 @@ function siegBehandeln() {
  */
 function niederlageBehandeln(aufgegeben = false) {
   z.phase = "verloren";
-  z.endeAusstehend = true;                      // "Neue Runde" wartet, bis der Dialog da war
-  const gerisseneSerie = statistik.serie;       // VOR dem Zurücksetzen merken
-  statistik = statistikNachRunde(statistik, false);   // Serie reißt → 0
+  z.endeAusstehend = true; // "Neue Runde" wartet, bis der Dialog da war
+  const gerisseneSerie = statistik.serie; // VOR dem Zurücksetzen merken
+  statistik = statistikNachRunde(statistik, false); // Serie reißt → 0
   statistikSpeichern();
   hudZeichnen();
   loesungZeigen();
@@ -509,7 +523,7 @@ function niederlageBehandeln(aufgegeben = false) {
         titel: "SERIE GERISSEN",
         punkte: gerisseneSerie,
         punkteText: `Serie: ${gerisseneSerie}`,
-        richtung: "hoch",                       // längere Serie = besser
+        richtung: "hoch", // längere Serie = besser
         format: (p) => `Serie: ${p}`,
         neustart: neueRunde,
       });
@@ -569,7 +583,7 @@ function beiDialogEnde(dialog, aktion) {
  * verständlich und die gemeinsame ui.js unverändert.)
  */
 function schlankerDialog({ titel, vorText, gross, text, neustartText = "Nochmal", neustart }) {
-  document.getElementById("spiel-dialog")?.remove();   // evtl. alten Dialog entfernen
+  document.getElementById("spiel-dialog")?.remove(); // evtl. alten Dialog entfernen
 
   const dialog = document.createElement("dialog");
   dialog.className = "spiel-dialog";
@@ -599,7 +613,7 @@ function schlankerDialog({ titel, vorText, gross, text, neustartText = "Nochmal"
   const uebersicht = document.createElement("a");
   uebersicht.className = "knopf";
   uebersicht.href = "./";
-  uebersicht.style.display = "none";   // Einzel-Repo: keine Spieleübersicht
+  uebersicht.style.display = "none"; // Einzel-Repo: keine Spieleübersicht
   uebersicht.textContent = "Zur Übersicht";
   aktionen.append(nochmal, uebersicht);
   dialog.append(grossText, absatz, aktionen);
@@ -626,8 +640,8 @@ function schlankerDialog({ titel, vorText, gross, text, neustartText = "Nochmal"
    nicht aus Versehen passiert, braucht es einen zweiten Klick binnen 3 s.
    ------------------------------------------------------------ */
 function neueRundeAngefordert() {
-  if (z.phase === "auswertung") return;          // mitten im Flip: ignorieren
-  if (z.endeAusstehend) return;                  // Niederlage-Dialog kommt gleich: Eintrag nicht verlieren
+  if (z.phase === "auswertung") return; // mitten im Flip: ignorieren
+  if (z.endeAusstehend) return; // Niederlage-Dialog kommt gleich: Eintrag nicht verlieren
   const angefangen = z.phase === "laeuft" && z.versuche.length > 0;
 
   if (angefangen) {
@@ -635,7 +649,9 @@ function neueRundeAngefordert() {
       z.aufgabeBestaetigung = true;
       toastZeigen("Aufgeben? Nochmal drücken – die Serie reißt.", 3000);
       const diese = z;
-      setTimeout(() => { diese.aufgabeBestaetigung = false; }, 3000);
+      setTimeout(() => {
+        diese.aufgabeBestaetigung = false;
+      }, 3000);
       return;
     }
     // Aufgeben = Niederlage wie jede andere: Die gerissene Serie kommt über
@@ -661,7 +677,8 @@ function hudZeichnen() {
   zahlHochzaehlen(el.hudSerie, statistik.serie);
   zahlHochzaehlen(el.hudRekord, statistik.besteSerie);
   const quote = quoteProzent(statistik);
-  if (quote === null) el.hudQuote.textContent = "–";   // noch nie gespielt
+  if (quote === null)
+    el.hudQuote.textContent = "–"; // noch nie gespielt
   else zahlHochzaehlen(el.hudQuote, quote);
 }
 
@@ -707,7 +724,7 @@ function init() {
   });
 
   document.getElementById("neue-runde").addEventListener("click", (e) => {
-    e.currentTarget.blur();   // sonst würde ein späteres Enter wieder "Neue Runde" auslösen
+    e.currentTarget.blur(); // sonst würde ein späteres Enter wieder "Neue Runde" auslösen
     neueRundeAngefordert();
   });
 
@@ -723,8 +740,8 @@ function init() {
 
   // Physische Tastatur: Ein Listener für die ganze Seite
   document.addEventListener("keydown", (e) => {
-    if (e.ctrlKey || e.metaKey || e.altKey) return;            // Browser-Kürzel nicht stören
-    if (document.querySelector("dialog[open]")) return;        // Dialog hat Vorrang
+    if (e.ctrlKey || e.metaKey || e.altKey) return; // Browser-Kürzel nicht stören
+    if (document.querySelector("dialog[open]")) return; // Dialog hat Vorrang
 
     if (e.key === "Enter") {
       // Auf Knöpfen, Links und der Lernbox-Überschrift soll Enter weiterhin
