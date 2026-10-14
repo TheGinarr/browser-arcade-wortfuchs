@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07070f">
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./assets/style.css">
+  <!-- Spielspezifische Styles (Kacheln, Flip-Animation, Bildschirmtastatur) -->
+  <link rel="stylesheet" href="./spiel.css">
+  <title>Wortfuchs · Browser-Arcade</title>
+  <meta name="description" content="Wortfuchs: Errate das deutsche Wort mit fünf Buchstaben in sechs Versuchen. Farbige Hinweise zeigen dir, wie nah du dran bist. Baue eine lange Siegesserie auf.">
+</head>
+<body style="--ak:var(--lime)">
+  <div class="raster" aria-hidden="true"></div>
+  <a class="skip-link" href="#main">Zum Inhalt springen</a>
+  <header class="kopf"><nav class="container nav" aria-label="Hauptnavigation">
+    <a class="marke" href="./"><span class="logo">▶</span>GAMES</a>
+    <div class="nav-links"><a href="./impressum.html">Impressum</a><a href="./datenschutz.html">Datenschutz</a></div>
+  </nav></header>
+  <main id="main" class="container">
+    <div class="spiel-kopf"><div><h1>WORTFUCHS</h1><p class="unterzeile">Errate das Wort mit fünf Buchstaben, du hast sechs Versuche.</p></div>
+      <button type="button" class="knopf primaer" id="neue-runde">Neue Runde</button></div>
+    <div class="hud">
+      <div class="hud-feld"><div class="label">Serie</div><div class="wert" id="hud-serie">0</div></div>
+      <div class="hud-feld"><div class="label">Rekord-Serie</div><div class="wert" id="hud-rekord">0</div></div>
+      <div class="hud-feld"><div class="label">Quote (%)</div><div class="wert" id="hud-quote">–</div></div>
+    </div>
+    <div class="buehne">
+      <!-- Kurze Hinweise ("Nicht im Wörterbuch"); aria-live = Screenreader lesen sie vor -->
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+      <div class="wf-raster" id="raster" role="grid" aria-label="Ratefeld mit sechs Versuchen"></div>
+      <!-- Lösungswort nach einer Niederlage (game.js blendet es bei neuer Runde wieder aus) -->
+      <p class="wf-loesung" id="loesung-hinweis" hidden></p>
+      <div class="wf-tasten" id="tastatur" role="group" aria-label="Bildschirmtastatur"></div>
+      <label class="wf-schalter"><input type="checkbox" id="nur-woerterbuch" checked> Nur Wörterbuch-Wörter zulassen</label>
+    </div>
+    <!-- Unsichtbare Live-Region: sagt Screenreadern das Ergebnis jedes Versuchs an -->
+    <p class="sr-only" id="status" role="status" aria-live="polite"></p>
+
+    <p class="steuerung">
+      Tippe mit der Tastatur (<kbd>A</kbd>–<kbd>Z</kbd>), <kbd>Backspace</kbd> löscht, <kbd>Enter</kbd> schickt den Versuch ab. Am Handy nutzt du die Bildschirmtastatur.
+      Grün = richtiger Platz, Gelb = Buchstabe steckt im Wort, aber woanders, Grau = kommt nicht vor.
+    </p>
+
+    <section style="max-width:420px;margin-top:36px"><h2 style="font-family:var(--pixel);font-weight:400;font-size:.85rem">Lokale Top 3</h2><div id="topliste"></div>
+      <button class="knopf" id="reset" style="margin-top:10px">Spielstand zurücksetzen</button></section>
+
+    <section class="lernbox"><details open><summary>Anleitung &amp; Regeln</summary>
+      <p><strong>Ziel:</strong> Errate das deutsche Wort mit 5 Buchstaben in höchstens 6 Versuchen.</p>
+      <ul>
+        <li>Jeder Versuch muss ein gültiges Wort sein (ohne Umlaute und ß). Nach dem Abschicken färben sich die Kacheln.</li>
+        <li><strong>Grün</strong> = Buchstabe steht an der richtigen Stelle. <strong>Gelb</strong> = Buchstabe kommt im Wort vor, aber woanders. <strong>Grau</strong> = kommt nicht vor.</li>
+        <li>Kommt ein Buchstabe doppelt vor, wird er auch nur so oft gefärbt, wie er im Lösungswort steckt.</li>
+        <li>Jeder Sieg verlängert deine Serie, eine Niederlage setzt sie auf 0. Die Serie landet in der Top 3, sobald sie reißt.</li>
+        <li>Das Wörterbuch kennt rund 12.500 deutsche Wörter. Der Schalter „Nur Wörterbuch-Wörter zulassen" erlaubt ausgeschaltet jede Buchstabenkombination.</li>
+      </ul>
+    </details></section>
+
+    <section class="lernbox"><details><summary>Wie funktioniert der Code?</summary>
+      <ul>
+        <li><strong>Auswertung in zwei Durchgängen:</strong> <code>bewerteTipp</code> markiert zuerst alle Volltreffer (grün) und nimmt deren Buchstaben aus einem Vorrat. Erst dann bekommen die übrigen Buchstaben „gelb“, solange im Vorrat noch ein passender liegt. Würde man in einem Durchgang von links nach rechts prüfen, könnte ein Buchstabe doppelt gelb werden, obwohl er im Lösungswort nur einmal vorkommt oder rechts schon als Volltreffer vergeben ist.</li>
+        <li><strong>Schnell prüfen mit <code>Set</code>:</strong> Alle gültigen Wörter liegen in einem <code>Set</code>. <code>menge.has(wort)</code> antwortet fast sofort, auch bei Hunderten Wörtern. In einem Array müsste <code>includes</code> die Liste jedes Mal von vorn durchsuchen.</li>
+        <li><strong>Flip-Animation rein in CSS:</strong> Eine <code>@keyframes</code>-Animation dreht die Kachel um die waagerechte Achse (<code>rotateX</code>). Bei exakt 50 %, wenn die Kachel „auf der Kante steht“ und nicht zu sehen ist, wechselt die Farbe. Weil Drehung und Farbe in derselben Animation stecken, passen sie immer zusammen. Jede Kachel startet über <code>animation-delay</code> um 0,1 s später (ihr Index steckt in der CSS-Variable <code>--i</code>).</li>
+        <li><strong>Zustand im Attribut:</strong> JavaScript setzt nur <code>data-status="richtig"</code> (bzw. <code>falscheStelle</code> / <code>nichtEnthalten</code>). Welche Farbe daraus wird, entscheidet allein das CSS. Dieselbe Trennung gilt für die Bildschirmtastatur.</li>
+        <li><strong>Beste Information pro Taste:</strong> Ein Buchstabe kann in mehreren Versuchen unterschiedliche Farben haben. Die Taste behält die „beste“ Auskunft (grün vor gelb vor grau), siehe <code>tastenStatusAktualisieren</code>.</li>
+        <li><strong>Serie als Highscore:</strong> Die reine Funktion <code>statistikNachRunde</code> rechnet gespielt, gewonnen und Serie nach jeder Runde neu aus und gibt ein <em>neues</em> Objekt zurück. Gespeichert wird es mit <code>speichere</code> aus <code>storage.js</code>. Ein Run ist die ganze Serie: Ein Sieg zeigt nur einen kurzen Dialog. Erst wenn eine Serie reißt (Niederlage oder bestätigtes Aufgeben), merkt sich <code>niederlageBehandeln</code> den Wert <em>vor</em> dem Zurücksetzen auf 0 und übergibt ihn an <code>gameOverDialog</code>, der bei einem Top-3-Platz nach den Initialen fragt. Würde man nach jedem Sieg eintragen, stünde dieselbe Serie als 1, 2, 3 … mehrfach in der Liste.</li>
+      </ul>
+    </details></section>
+  </main>
+  <footer class="fuss"><div class="container fuss-in"><span>Browser-Arcade · Open Source</span><nav aria-label="Rechtliches"><a href="./impressum.html">Impressum</a><a href="./datenschutz.html">Datenschutz</a></nav></div></footer>
+  <script type="module" src="./game.js"></script>
+</body>
+</html>

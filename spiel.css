@@ -1,0 +1,161 @@
+/* ============================================================
+   Wortfuchs · spielspezifische Styles
+   ------------------------------------------------------------
+   Das gemeinsame Design (Farben, HUD, Knöpfe, Dialog, Schüttel-
+   Animation) kommt aus ../assets/style.css. Hier liegt nur, was
+   dieses Spiel allein braucht: Kacheln, Flip, Tastatur, Hinweis-Toast.
+
+   Grundprinzip: JavaScript setzt nur data-status="…" an Kachel bzw.
+   Taste. Welche FARBE das bedeutet, steht ausschließlich hier.
+   ============================================================ */
+
+/* Für Bildschirmleser sichtbar, für Augen unsichtbar (Live-Region) */
+.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+/* Seitlich enger polstern, damit auf Handys zehn Tasten nebeneinander passen.
+   Oben bleibt Platz für den Hinweis-Toast, damit er die erste Zeile nicht verdeckt. */
+.buehne{padding:56px 10px 16px}
+
+/* ---------- Hinweis-Toast ("Nicht im Wörterbuch") --------------- */
+.toast{
+  position:absolute;top:12px;left:50%;z-index:3;
+  translate:-50% -8px;opacity:0;pointer-events:none;
+  padding:9px 16px;border-radius:10px;white-space:nowrap;
+  background:var(--txt);color:#05050c;font-weight:600;font-size:.92rem;
+  box-shadow:0 6px 20px #00000088;
+  transition:opacity var(--schnell),translate var(--schnell);
+}
+.toast.sichtbar{opacity:1;translate:-50% 0}
+
+/* ---------- Ratefeld: 6 Zeilen × 5 Kacheln ---------------------- */
+.wf-raster{
+  /* Dauer und Versatz des Flips setzt game.js (eine Wahrheit für JS und CSS) */
+  --flip-dauer:500ms;
+  --flip-versatz:100ms;
+  display:grid;gap:6px;
+  width:min(100%,330px);margin:0 auto 22px;
+}
+.wf-zeile{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+
+.kachel{
+  /* Farben VOR dem Auswerten (Flip startet hier) … */
+  --von:var(--panel2);--von-rand:var(--line);--von-text:var(--txt);
+  /* … und Zielfarben NACH dem Auswerten (werden unten je Status überschrieben) */
+  --nach:var(--panel2);--nach-rand:var(--line);--nach-text:var(--txt);
+
+  aspect-ratio:1;display:grid;place-items:center;
+  font-family:var(--pixel);font-size:clamp(1.1rem,6vw,1.7rem);line-height:1;
+  text-transform:uppercase;
+  color:var(--von-text);background-color:var(--von);
+  border:2px solid var(--von-rand);border-radius:8px;
+  transition:border-color var(--schnell);
+}
+/* Kachel mit getipptem Buchstaben: helleres Rahmen + kleines "Plopp" */
+.kachel.gefuellt{--von-rand:#5a5a9a;border-color:#5a5a9a;animation:kachel-pop .12s ease-out}
+@keyframes kachel-pop{from{transform:scale(.88)}60%{transform:scale(1.07)}to{transform:none}}
+
+/* Ausgewertete Kachel: Zielfarbe je Status */
+.kachel[data-status]{color:var(--nach-text);background-color:var(--nach);border-color:var(--nach-rand)}
+.kachel[data-status="richtig"]{--nach:var(--lime);--nach-rand:var(--lime);--nach-text:#05050c}
+.kachel[data-status="falscheStelle"]{--nach:var(--gold);--nach-rand:var(--gold);--nach-text:#05050c}
+.kachel[data-status="nichtEnthalten"]{--nach:#34344a;--nach-rand:#34344a;--nach-text:var(--txt)}
+
+/* ---------- Flip-Animation -------------------------------------
+   Die Kachel klappt um die waagerechte Achse bis auf 90° (dann ist sie
+   nur noch eine unsichtbar dünne Kante), wechselt die Farbe und klappt
+   zurück.
+
+   WARUM WECHSELT DIE FARBE BEI EXAKT 50 %?
+   Bei 50 % der Animationsdauer steht die Kachel bei -90°, also "auf der
+   Kante". In diesem Moment sieht man weder die alte noch die neue Seite,
+   der Wechsel fällt nicht auf. Weil Drehung und Farbe im SELBEN @keyframes
+   stehen, laufen sie auf derselben Zeitachse: kein setTimeout, kein
+   Auseinanderdriften, auch nicht bei Ruckeln.
+   (Zwischen 49,9 % und 50 % springt die Farbe in einem Sechstel einer
+   Millisekunde – praktisch ein harter Schnitt.)
+
+   animation-fill-mode "both":
+   - backwards: Während der Wartezeit (animation-delay) zeigt die Kachel
+     schon den 0 %-Zustand, also noch die alte Farbe, auch wenn data-status
+     (die neue Farbe) längst gesetzt ist.
+   - forwards: Nach dem Ende bleibt der 100 %-Zustand stehen.
+   ease-in zur Kante hin, ease-out zurück = am Wendepunkt am schnellsten,
+   wirkt wie ein echtes Umklappen. */
+.kachel.flip{
+  animation:kachel-flip var(--flip-dauer) linear both;
+  animation-delay:calc(var(--i) * var(--flip-versatz));
+}
+@keyframes kachel-flip{
+  0%{
+    transform:perspective(420px) rotateX(0);animation-timing-function:ease-in;
+    background-color:var(--von);border-color:var(--von-rand);color:var(--von-text);
+  }
+  49.9%{
+    transform:perspective(420px) rotateX(-90deg);
+    background-color:var(--von);border-color:var(--von-rand);color:var(--von-text);
+  }
+  50%{
+    transform:perspective(420px) rotateX(-90deg);animation-timing-function:ease-out;
+    background-color:var(--nach);border-color:var(--nach-rand);color:var(--nach-text);
+  }
+  100%{
+    transform:perspective(420px) rotateX(0);
+    background-color:var(--nach);border-color:var(--nach-rand);color:var(--nach-text);
+  }
+}
+
+/* Sieg: die Kacheln der Gewinnerzeile hüpfen nacheinander */
+.kachel.huepf{animation:kachel-huepf .7s ease both;animation-delay:calc(var(--i) * 90ms)}
+@keyframes kachel-huepf{
+  0%,100%{transform:none}
+  30%{transform:translateY(-14px)}
+  55%{transform:translateY(3px)}
+  75%{transform:translateY(-5px)}
+}
+
+/* ---------- Bildschirmtastatur ---------------------------------- */
+.wf-tasten{display:grid;gap:6px;width:min(100%,520px);margin:0 auto}
+.wf-reihe{display:flex;justify-content:center;gap:5px}
+.wf-taste{
+  flex:1 1 0;min-width:0;max-width:48px;height:54px;padding:0;
+  font:600 .95rem var(--sans);text-transform:uppercase;color:var(--txt);
+  background:var(--panel2);border:1px solid var(--line);border-bottom-width:3px;border-radius:8px;
+  cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+  transition:background-color var(--schnell),color var(--schnell),border-color var(--schnell),transform var(--schnell);
+}
+/* Hover nur auf Geräten mit echter Maus: Auf dem Handy bliebe der Rahmen
+   sonst nach dem Antippen "hängen" (Touch simuliert Hover). */
+@media (hover:hover){.wf-taste:hover{border-color:var(--ak)}}
+.wf-taste:active{transform:scale(.94)}
+.wf-taste.breit{flex:1.7 1 0;max-width:78px;font-size:.78rem}
+.wf-taste:focus-visible{outline:2px solid var(--ak);outline-offset:2px}
+
+/* Tastenfarben: die beste bekannte Info pro Buchstabe */
+.wf-taste[data-status="richtig"]{background:var(--lime);border-color:var(--lime);color:#05050c}
+.wf-taste[data-status="falscheStelle"]{background:var(--gold);border-color:var(--gold);color:#05050c}
+.wf-taste[data-status="nichtEnthalten"]{background:#1a1a28;border-color:#242438;color:#6a6a88}
+
+/* ---------- Schalter "Nur Wörterbuch-Wörter" -------------------- */
+.wf-schalter{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  margin-top:18px;font-size:.92rem;color:var(--mut);cursor:pointer;
+}
+.wf-schalter input{width:18px;height:18px;accent-color:var(--ak)}
+
+/* ---------- Dialog: das große Wort/Ergebnis in Akzentfarbe ---------- */
+dialog.spiel-dialog p.gross{color:var(--ak);text-shadow:0 0 14px color-mix(in srgb,var(--ak) 50%,transparent)}
+
+/* ---------- Schmale Handys: HUD in einer Zeile halten ---------- */
+@media (max-width:480px){
+  .wf-reihe{gap:4px}
+  .hud{gap:8px}
+  .hud-feld{flex:1 1 0;min-width:0;padding:10px 6px}
+  .hud-feld .label{font-size:.6rem;letter-spacing:.06em}
+  .hud-feld .wert{font-size:.85rem}
+}
+
+/* ---------- Lösungswort nach einer Niederlage ------------------
+   Gilt für die Hinweiszeile unter dem Raster und die Zeile im Dialog. */
+.wf-loesung{text-align:center;color:var(--mut)}
+.buehne .wf-loesung{margin:-8px 0 16px}   /* nur die Hinweiszeile; die Dialog-Zeile bleibt unverändert */
+.wf-loesung strong{font-family:var(--pixel);letter-spacing:.1em;color:var(--txt)}
