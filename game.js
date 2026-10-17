@@ -33,7 +33,8 @@ import {
   gameOverDialog,
   zahlHochzaehlen,
 } from "./assets/ui.js";
-import { LOESUNGEN, ZUSATZ, HAEUFIGE } from "./woerter.js";
+import { LOESUNGEN, ZUSATZ } from "./woerter.js";
+import { HAEUFIGE } from "./woerter-haeufig.js";
 
 /* ------------------------------------------------------------
    Konstanten

@@ -33,5 +33,7 @@ höchstens 100 Zeichen pro Zeile. Vor einem Commit einfach `npx prettier --write
 
 ## Lizenz
 
-Code: MIT (`LICENSE`). Schriften: SIL Open Font License 1.1 (`assets/fonts/OFL-LIZENZ.txt`).
+Code: MIT (`LICENSE`). Schriften: SIL Open Font License 1.1 (Press Start 2P und IBM Plex, `assets/fonts/OFL-LIZENZ.txt`).
+Die Rate-Wortliste `woerter-haeufig.js` stammt aus
+[FrequencyWords](https://github.com/hermitdave/FrequencyWords) (Hermit Dave) und steht unter CC BY-SA 4.0.
 Alle Grafiken entstehen im Code, ohne fremde Bilddateien.
