@@ -316,7 +316,7 @@ dialog.spiel-dialog p.gross {
     padding: 10px 6px;
   }
   .hud-feld .label {
-    font-size: 0.6rem;
+    font-size: 0.75rem;
     letter-spacing: 0.06em;
   }
   .hud-feld .wert {
@@ -337,4 +337,37 @@ dialog.spiel-dialog p.gross {
   font-family: var(--pixel);
   letter-spacing: 0.1em;
   color: var(--txt);
+}
+
+/* hell-gen: automatisch erzeugt */
+@media (prefers-color-scheme: light) {
+  :where(:root:not([data-thema="dunkel"])) .kachel[data-status="richtig"] {
+    --nach-text: #f6f6fb;
+  }
+  :where(:root:not([data-thema="dunkel"])) .kachel[data-status="falscheStelle"] {
+    --nach-text: #f6f6fb;
+  }
+  :where(:root:not([data-thema="dunkel"])) .kachel[data-status="nichtEnthalten"] {
+    --nach: #c8c8d8;
+    --nach-rand: #c8c8d8;
+  }
+  :where(:root:not([data-thema="dunkel"])) .wf-taste[data-status="nichtEnthalten"] {
+    background: #e1e1ec;
+    border-color: #d5d5e4;
+  }
+}
+
+:where(:root[data-thema="hell"]) .kachel[data-status="richtig"] {
+  --nach-text: #f6f6fb;
+}
+:where(:root[data-thema="hell"]) .kachel[data-status="falscheStelle"] {
+  --nach-text: #f6f6fb;
+}
+:where(:root[data-thema="hell"]) .kachel[data-status="nichtEnthalten"] {
+  --nach: #c8c8d8;
+  --nach-rand: #c8c8d8;
+}
+:where(:root[data-thema="hell"]) .wf-taste[data-status="nichtEnthalten"] {
+  background: #e1e1ec;
+  border-color: #d5d5e4;
 }
